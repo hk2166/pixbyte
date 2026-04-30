@@ -24,6 +24,7 @@ from pydantic import BaseModel
 from processor.video import extract_frames, DISPLAY_CONFIGS, get_video_info
 from processor.dither import apply_dithering
 from processor.encoder import deduplicate_frames, encode_oled_binary, get_binary_stats
+from database import init_db, close_db, track_visitor
 
 app = FastAPI(title="ESP32 OLED Video Converter", version="1.0.0")
 
@@ -36,6 +37,20 @@ app.add_middleware(
 )
 
 
+# ── Startup/Shutdown Events ───────────────────────────────────────────────────
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database connection on startup."""
+    await init_db()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close database connection on shutdown."""
+    await close_db()
+
+
 # ── In-memory job store ────────────────────────────────────────────────────────
 jobs: dict[str, dict] = {}
 UPLOAD_DIR = Path(tempfile.gettempdir()) / "oled_uploads"
@@ -44,9 +59,40 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 
+# ── Helper Functions ──────────────────────────────────────────────────────────
+
+def get_client_ip(request: Request) -> str:
+    """Extract client IP address from request."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Core API Endpoints
 # ══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/")
+async def root(request: Request):
+    """Root endpoint - tracks visitors and returns API info."""
+    # Track visitor
+    ip = get_client_ip(request)
+    await track_visitor(ip)
+    
+    return {
+        "name": "ESP32 OLED Video Converter API",
+        "version": "1.0.0",
+        "status": "healthy",
+        "endpoints": {
+            "displays": "/api/displays",
+            "upload": "/api/upload",
+            "process": "/api/process"
+        }
+    }
+
+
+@app.get("/api/displays")
 
 
 def _clean_stale_users() -> None:
@@ -62,40 +108,12 @@ def _clean_stale_users() -> None:
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
-@app.get("/")
-async def root():
-    """Root endpoint - health check."""
-    return {
-        "name": "ESP32 OLED Video Converter API",
-        "version": "1.0.0",
-        "status": "healthy",
-        "endpoints": {
-            "displays": "/api/displays",
-            "upload": "/api/upload",
-            "process": "/api/process",
-            "analytics": "/api/analytics/summary"
-        }
-    }
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint for monitoring."""
-    analytics = await get_analytics_summary()
-    return {
-        "status": "healthy",
-        "database": "connected" if analytics["enabled"] else "disabled",
-        "timestamp": "2024-01-01T00:00:00Z"
-    }
-
-
 @app.get("/api/displays")
 async def get_displays():
     """Return available display configurations."""
     return {"displays": [
         {"key": k, **v} for k, v in DISPLAY_CONFIGS.items()
     ]}
-
 
 @app.post("/api/heartbeat")
 async def heartbeat(request: Request):
