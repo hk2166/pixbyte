@@ -1,16 +1,15 @@
 """
 main.py — Minimal FastAPI backend serving only display configurations
 """
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from processor.video import DISPLAY_CONFIGS
-from database import init_db, close_db, track_visitor
 
-app = FastAPI(title="ESP32 OLED Video Converter", version="1.0.0")
+app = FastAPI(title="ESP32 OLED Display Configs", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,50 +20,9 @@ app.add_middleware(
 )
 
 
-# ── Startup/Shutdown Events ───────────────────────────────────────────────────
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database connection on startup."""
-    await init_db()
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Close database connection on shutdown."""
-    await close_db()
-
-
-# ── Helper Functions ──────────────────────────────────────────────────────────
-
-def get_client_ip(request: Request) -> str:
-    """Extract client IP address from request."""
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
-
-
 # ══════════════════════════════════════════════════════════════════════════════
-# API Endpoints
+# API Endpoint
 # ══════════════════════════════════════════════════════════════════════════════
-
-@app.get("/")
-async def root(request: Request):
-    """Root endpoint - tracks visitors and returns API info."""
-    # Track visitor
-    ip = get_client_ip(request)
-    await track_visitor(ip)
-    
-    return {
-        "name": "ESP32 OLED Video Converter API",
-        "version": "1.0.0",
-        "status": "healthy",
-        "endpoints": {
-            "displays": "/api/displays"
-        }
-    }
-
 
 @app.get("/api/displays")
 async def get_displays():
