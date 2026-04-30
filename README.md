@@ -1,137 +1,215 @@
-# ESP32 OLED Video Converter (0x1306)
+# 🎨 ESP32 OLED Video Converter
 
-A full-stack, hacker-aesthetic web application designed specifically to convert standard video files into bit-packed, hardware-optimized formats for streaming and playback on ESP32-driven micro-OLED displays (SH1106 / SSD1306).
+Convert videos to binary frames for ESP32 OLED displays. Upload a video, select your display, and get a ready-to-flash Arduino sketch with embedded frames.
 
-Built entirely around the severe bandwidth and memory constraints of embedded hardware, this tool bypasses heavy graphics libraries (like `U8g2`'s display buffers) to push raw bits directly down the I²C bus for high frame-rate video rendering.
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
----
+## ✨ Features
 
-## 🏗️ Architecture
+- **🎬 Video Processing**: Convert MP4, AVI, MOV, MKV, WebM, GIF to OLED frames
+- **📺 Multiple Displays**: Support for SSD1306, SH1106, ILI9341, ST7735, ST7789, MAX7219, HD44780
+- **⚡ Real-time Preview**: See your video on a virtual OLED display before flashing
+- **📦 One-Click Download**: Get complete Arduino .ino file with embedded frames
+- **🔧 Display-Specific Code**: Automatically generates correct driver code for your display
+- **📊 Analytics**: Track visitors and collect feedback (optional, Neon PostgreSQL)
+- **🎨 Dithering**: Floyd-Steinberg dithering for better image quality
+- **🗜️ Frame Deduplication**: Removes duplicate frames to save space
+- **📐 Aspect Ratio**: Maintains video aspect ratio with letterboxing
 
-The app is built in 3 modular parts:
+## 🚀 Quick Start
 
-1. **Frontend (Vite / React + TypeScript)**  
-   Provides a dark, terminal-style aesthetic mimicking low-level tooling. Uses an HTML5 Canvas to render a simulated "lit-pixel" live preview with scanlines. Fetches SSE data for real-time progress.
-2. **Backend (Python / FastAPI + FFmpeg)**  
-   The core translation engine. Given any video file, it extracts scaled frames at the exact FPS required, crushes Grayscale using pure Floyd-Steinberg dithering mathematics, and packs continuous 8-row sequences vertically specifically to map 1:1 with standard OLED memory structures.
-3. **Firmware (Arduino C++ framework)**  
-   A boilerplate `esp32_oled_player` configured out-of-the-box to interpret the generated `.oled` raw payloads over 3 separate vectors: `Flash memory (PROGMEM)`, `SD Card (SPI)`, or Streaming directly over LAN (`WiFi`).
+### Local Development
 
----
-
-## 🛠️ Requirements
-* **Node.js**: v18+ (for frontend)
-* **Python**: v3.10+ (for backend)
-* **FFmpeg**: Must be installed globally (e.g., `brew install ffmpeg`)
-* **PlatformIO / Arduino IDE**: For flashing the micro-controller.
-
----
-
-## 🚀 Running Locally
-
-### 1. Start the Backend API (Python)
-Navigate to the `backend` directory, initialize a virtual environment, and run the server on port `8001`:
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/oled-converter.git
+cd oled-converter/pixbyte
+
+# Install dependencies
 cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8001
-```
+cd ..
 
-### 2. Start the Frontend App (JavaScript)
-Navigate to the `frontend` directory, install Node modules, and run the Vite host:
-```bash
 cd frontend
 npm install
-npm run dev -- --port 5174
+cd ..
+
+# Start both servers
+./run.sh
 ```
 
-Visit the frontend at **http://localhost:5174**.
+Open `http://localhost:5888` in your browser.
+
+### Docker
+
+```bash
+docker-compose up --build
+```
+
+Open `http://localhost:8888` in your browser.
+
+## 📋 Requirements
+
+- **Python 3.11+**
+- **Node.js 20+**
+- **FFmpeg** (for video processing)
+- **PostgreSQL** (optional, for analytics)
+
+## 🎯 Supported Displays
+
+| Display | Resolution | Interface | FPS |
+|---------|-----------|-----------|-----|
+| SSD1306 | 128×64 | I2C/SPI | 10-15 |
+| SH1106 | 128×64 | I2C/SPI | 8-15 |
+| SSD1306 | 128×32 | I2C | 15 |
+| ILI9341 | 320×240 | SPI | 15 |
+| ST7735 | 160×128 | SPI | 15 |
+| ST7789 | 240×240 | SPI | 15 |
+| MAX7219 | 8×8 | SPI | 2 |
+| HD44780 | 16×2 | I2C/Parallel | 1 |
+
+## 🔧 How It Works
+
+1. **Upload Video**: Drag & drop or select a video file
+2. **Select Display**: Choose your OLED display type
+3. **Configure**: Adjust FPS, dithering, and deduplication
+4. **Process**: Backend extracts frames using FFmpeg
+5. **Preview**: See real-time preview on virtual display
+6. **Download**: Get complete .ino file with embedded frames
+7. **Flash**: Open in Arduino IDE and upload to ESP32
+
+## 📊 Analytics (Optional)
+
+Track visitors and collect feedback using Neon PostgreSQL:
+
+```bash
+# Set up database
+cp backend/.env.example backend/.env
+# Edit .env and add your DATABASE_URL
+
+# Tables are created automatically on startup
+```
+
+See [ANALYTICS_SETUP.md](ANALYTICS_SETUP.md) for details.
+
+## 🚢 Deployment
+
+Deploy to your favorite platform:
+
+- **Railway**: One-click deploy with `railway.toml`
+- **Render**: Auto-deploy with `render.yaml`
+- **Docker**: Use included `Dockerfile` and `docker-compose.yml`
+- **Fly.io**: `flyctl launch`
+- **Vercel**: Use `vercel.json` (serverless)
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
+
+## 🏗️ Architecture
+
+```
+pixbyte/
+├── backend/              # FastAPI Python backend
+│   ├── main.py          # API endpoints
+│   ├── database.py      # PostgreSQL integration
+│   └── processor/       # Video processing
+│       ├── video.py     # FFmpeg frame extraction
+│       ├── encoder.py   # Binary encoding
+│       └── dither.py    # Image dithering
+├── frontend/            # React + TypeScript frontend
+│   └── src/
+│       ├── App.tsx      # Main application
+│       ├── api.ts       # API client
+│       └── components/  # UI components
+├── Dockerfile           # Production container
+├── docker-compose.yml   # Local development
+└── run.sh              # Development startup script
+```
+
+## 🔌 API Endpoints
+
+### Video Processing
+- `POST /api/upload` - Upload video file
+- `POST /api/process` - Start processing
+- `GET /api/status/{job_id}` - SSE status stream
+- `GET /api/download/{job_id}` - Download .oled binary
+- `GET /api/download/{job_id}/ino` - Download .ino file
+
+### Analytics
+- `POST /api/track-visit` - Track visitor
+- `GET /api/analytics/summary` - Get analytics summary
+- `POST /api/feedback` - Submit feedback
+
+### Displays
+- `GET /api/displays` - List supported displays
+
+## 🛠️ Development
+
+```bash
+# Backend
+cd backend
+source venv/bin/activate
+uvicorn main:app --reload --port 8888
+
+# Frontend
+cd frontend
+npm run dev -- --port 5888
+```
+
+## 🧪 Testing
+
+```bash
+# Test backend API
+curl http://localhost:8888/api/displays
+
+# Test health check
+curl http://localhost:8888/health
+
+# Test video upload
+curl -X POST -F "file=@video.mp4" http://localhost:8888/api/upload
+```
+
+## 📝 Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | No | Neon PostgreSQL connection string |
+| `PORT` | No | Server port (default: 8888) |
+| `VITE_API_URL` | No | Frontend API URL (default: http://localhost:8888) |
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## 🙏 Acknowledgments
+
+- **FFmpeg** - Video processing
+- **FastAPI** - Backend framework
+- **React** - Frontend framework
+- **Neon** - PostgreSQL database
+- **Vite** - Frontend build tool
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/oled-converter/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/oled-converter/discussions)
+- **Email**: your-email@example.com
+
+## 🎉 Demo
+
+Try it live: [https://your-app.railway.app](https://your-app.railway.app)
 
 ---
 
-## 🔌 Using on Hardware (ESP32)
-
-1. Upload your video via the web UI and select your target display (e.g. `1.3" OLED SH1106`). 
-2. Set your required target framerate (`fps`). Anything past 11 FPS on I²C heavily strains regular clock speeds. Set Floyd-Steinberg dithering to 'on' for maximum contrast visibility.
-3. Wait for the `.oled` buffer extraction pipeline.
-4. Download the generated `.oled` binary file via the Delivery Panel.
-
-### Hardware Interface Options:
-* **Flash Mode**: If your file size is < 2.8MB, flash it straight into unmapped flash regions on your ESP32 utilizing Esptool. The code snippet is provided within your frontend delivery portal automatically.
-* **SD Card Mode**: Place `display.oled` directly in the root of an SD Card, tie MOSI/MISO/CLK/CS into your ESP32's SPI header, and change the definition to `#define MODE_SD` on line 18 in `/firmware/esp32_oled_player/esp32_oled_player.ino`.
-* **WiFi Mode**: Stream real-time buffer blocks over localhost sockets straight off the Python FastAPI router to bypass storage all together. Ensure your device is on the same VLAN / host loop.
-
----
-
-## 📂 Custom Binary Format (`.oled`)
-
-Because standard containers (MP4, AVI) require bloated hardware decoders, this system creates custom header-embedded files meant explicitly for direct microcontroller delivery:
-
-| Byte Offset | Size | Purpose | Example |
-| :--- | :--- | :--- | :--- |
-| `0-3` | 4 bytes | Magic Number (`OLED`) | `0x4F 0x4C 0x45 0x44` |
-| `4` | 1 byte | Format Version | `0x01` |
-| `5-6` | 2 bytes | Width (uint16 LE) | `128` |
-| `7-8` | 2 bytes | Height (uint16 LE) | `64` |
-| `9` | 1 byte | FPS | `10` |
-| `10` | 1 byte | Driver ID | `0x01` (SH1106), `0x02` (SSD1306) |
-| `11-14` | 4 bytes | Frame count (uint32 LE) | `1850` |
-| `15` | 1 byte | Reserved | `0x00` |
-| `16+` | `W * (H/8)` | Vertical Column Frame Buffers | ... bytes |
-
-**Header Validation**: The firmware validates the magic bytes and version on startup. If validation fails, the ESP32 will print an error to Serial and halt, preventing garbage output from invalid binaries.
-
----
-
-## ⚡ Performance Optimizations
-
-### I2C Clock Speed
-The firmware explicitly sets the I2C clock speed to **400kHz** (Fast Mode) by default. This provides:
-- Theoretical frame rate ceiling of ~30fps for 128×64 displays after I2C protocol overhead
-- At **800kHz** (Fast Mode Plus), frame rates can approach 60fps
-- Configurable via `I2C_CLOCK_HZ` define in the firmware
-
-### SPI Support (NEW)
-For even higher performance, the firmware now supports **SPI mode** alongside I2C:
-- SPI can run at **10-40MHz** — up to 100× faster than I2C
-- Enables true 30fps+ playback on 128×64 displays
-- Requires a 4-wire SPI OLED module (SDA/SCL pins become MOSI/SCLK)
-- Configure via `#define DISPLAY_INTERFACE SPI` in firmware
-- Default pins: MOSI=23, SCLK=18, CS=5, DC=16, RST=17
-
-### Duplicate Frame Removal
-The encoder automatically removes consecutive duplicate frames:
-- Uses XOR-based pixel difference detection
-- Default threshold: 2% pixel change (configurable via `dedup_threshold`)
-- Significantly reduces file size for videos with static scenes
-- Logs dropped frame count during encoding
-
-### Frame Timing Stability
-The firmware uses deadline-based scheduling for stable playback:
-- Maintains precise frame timing even with I2C transaction variance
-- Prevents playback speed drift over time
-- Uses microsecond-precision timing for smooth animation
-
----
-
-## 🎨 Real-Time Preview
-
-The web UI includes a real-time 1-bit preview canvas:
-- Shows the first 30 frames of your processed video
-- Renders at actual display resolution (128×64 or 128×32) scaled 4× for visibility
-- Animates at the encoded FPS using `requestAnimationFrame`
-- Simulates OLED appearance with optional phosphor tint
-
----
-
-## 🌐 Browser Compatibility
-
-**WebSerial Flashing** requires a Chromium-based browser:
-- ✅ Chrome 89+
-- ✅ Edge 89+
-- ❌ Firefox (not supported)
-- ❌ Safari (not supported)
-
-If your browser doesn't support WebSerial, the UI will display a warning banner and provide CLI flashing instructions using `esptool.py`.
+Made with ❤️ for the ESP32 maker community

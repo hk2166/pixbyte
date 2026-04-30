@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: oled-video-converter
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: PORT
+        value: 8888
+      - key: PYTHON_VERSION
+        value: 3.11
+    healthCheckPath: /api/displays
+    autoDeploy: true

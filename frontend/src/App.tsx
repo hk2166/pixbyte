@@ -5,7 +5,8 @@ import DisplayCard from './components/DisplayCard';
 import OLEDPreview from './components/OLEDPreview';
 import DeliveryPanel from './components/DeliveryPanel';
 import AnimationBrowser from './components/AnimationBrowser';
-import { fetchDisplays, uploadVideo, startProcessing, subscribeStatus } from './api';
+import FeedbackModal from './components/FeedbackModal';
+import { fetchDisplays, uploadVideo, startProcessing, subscribeStatus, trackVisit } from './api';
 import { getWiringGuide } from './displayWiring';
 import { useSerial } from './context/SerialContext';
 import type { DisplayConfig, DisplayKey, ProcessingState, VideoInfo } from './types';
@@ -25,9 +26,46 @@ const INITIAL_STATE: ProcessingState = {
   config: {},
 };
 
+const FEEDBACK_DELAY_MS = 2 * 60 * 1000; // 2 minutes
+const FEEDBACK_STORAGE_KEY = 'oled_converter_feedback_submitted';
+
 export default function App() {
   const [mode, setMode] = useState<AppMode>('converter');
   const [displays, setDisplays] = useState<DisplayConfig[]>([]);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  
+  // Track visitor on mount
+  useEffect(() => {
+    trackVisit();
+  }, []);
+
+  // Feedback modal timer - show after 2 minutes if not already submitted
+  useEffect(() => {
+    // Check if user has already submitted feedback
+    const hasSubmitted = localStorage.getItem(FEEDBACK_STORAGE_KEY);
+    if (hasSubmitted) {
+      return;
+    }
+
+    // Set timer for 2 minutes
+    const timer = setTimeout(() => {
+      setShowFeedbackModal(true);
+    }, FEEDBACK_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleFeedbackSubmit = () => {
+    // Mark as submitted so it doesn't show again
+    localStorage.setItem(FEEDBACK_STORAGE_KEY, 'true');
+    setShowFeedbackModal(false);
+  };
+
+  const handleFeedbackClose = () => {
+    setShowFeedbackModal(false);
+    // Don't mark as submitted, so it might show again in future visits
+  };
+
   const [selectedDisplay, setSelectedDisplay] = useState<DisplayKey>('ssd1306_128x64');
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
@@ -471,6 +509,14 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Feedback Modal ────────────────────────────────────────────── */}
+      {showFeedbackModal && (
+        <FeedbackModal
+          onClose={handleFeedbackClose}
+          onSubmit={handleFeedbackSubmit}
+        />
       )}
     </div>
   );
