@@ -581,7 +581,7 @@ export default function DeliveryPanel({ jobId, stats, config }: Props) {
         )}
       </div>
 
-      {tab === 'flash'   && <FlashTab jobId={jobId} stats={stats} config={config} fps={fps} />}
+      {tab === 'flash'   && <FlashTab jobId={jobId} stats={stats} config={config} fps={stats?.fps || config.fps || 10} />}
       
       
     </div>
