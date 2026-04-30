@@ -64,39 +64,3 @@ export function downloadUrl(jobId: string) {
 export function streamMetaUrl(jobId: string) {
   return `${BASE}/api/stream/${jobId}/meta`;
 }
-
-
-// ── Analytics & Feedback ──────────────────────────────────────────────────────
-
-export async function trackVisit(): Promise<void> {
-  try {
-    await fetch(`${BASE}/api/track-visit`, { method: 'POST' });
-  } catch (e) {
-    console.warn('Failed to track visit:', e);
-  }
-}
-
-export async function getAnalyticsSummary(): Promise<any> {
-  try {
-    const r = await fetch(`${BASE}/api/analytics/summary`);
-    return r.json();
-  } catch (e) {
-    console.warn('Failed to fetch analytics:', e);
-    return { enabled: false };
-  }
-}
-
-export async function submitFeedback(data: {
-  name: string;
-  building: string;
-  improvements: string;
-  features: string;
-}): Promise<any> {
-  const r = await fetch(`${BASE}/api/feedback`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}

@@ -24,10 +24,6 @@ from pydantic import BaseModel
 from processor.video import extract_frames, DISPLAY_CONFIGS, get_video_info
 from processor.dither import apply_dithering
 from processor.encoder import deduplicate_frames, encode_oled_binary, get_binary_stats
-from database import (
-    init_db, close_db, track_visitor, get_analytics_summary,
-    submit_feedback, get_recent_feedback, get_daily_stats
-)
 
 app = FastAPI(title="ESP32 OLED Video Converter", version="1.0.0")
 
@@ -40,29 +36,6 @@ app.add_middleware(
 )
 
 
-# ── Startup/Shutdown Events ───────────────────────────────────────────────────
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database connection on startup."""
-    await init_db()
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Close database connection on shutdown."""
-    await close_db()
-
-
-# ── Request Models ────────────────────────────────────────────────────────────
-
-class FeedbackRequest(BaseModel):
-    name: str
-    building: str
-    improvements: str
-    features: str
-
-
 # ── In-memory job store ────────────────────────────────────────────────────────
 jobs: dict[str, dict] = {}
 UPLOAD_DIR = Path(tempfile.gettempdir()) / "oled_uploads"
@@ -71,14 +44,9 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 
-# ── Helper Functions ──────────────────────────────────────────────────────────
-
-def get_client_ip(request: Request) -> str:
-    """Extract client IP address from request."""
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+# ══════════════════════════════════════════════════════════════════════════════
+# Core API Endpoints
+# ══════════════════════════════════════════════════════════════════════════════
 
 
 def _clean_stale_users() -> None:
@@ -832,55 +800,6 @@ async def stream_frame(job_id: str, index: int):
         data = await f.read(frame_size)
 
     return Response(content=data, media_type="application/octet-stream")
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Analytics & Feedback Endpoints
-# ══════════════════════════════════════════════════════════════════════════════
-
-@app.post("/api/track-visit")
-async def track_visit(request: Request):
-    """Track a visitor by IP address."""
-    ip = get_client_ip(request)
-    is_new = await track_visitor(ip)
-    return {"tracked": True, "is_new_visitor": is_new, "ip": ip}
-
-
-@app.get("/api/analytics/summary")
-async def analytics_summary():
-    """Get analytics summary (total visitors, today's visitors, feedback count)."""
-    summary = await get_analytics_summary()
-    return summary
-
-
-@app.get("/api/analytics/daily")
-async def analytics_daily(days: int = 30):
-    """Get daily visitor statistics for the last N days."""
-    stats = await get_daily_stats(days)
-    return {"stats": stats}
-
-
-@app.post("/api/feedback")
-async def create_feedback(feedback: FeedbackRequest):
-    """Submit user feedback."""
-    feedback_id = await submit_feedback(
-        name=feedback.name,
-        building=feedback.building,
-        improvements=feedback.improvements,
-        features=feedback.features
-    )
-    
-    if feedback_id:
-        return {"success": True, "feedback_id": feedback_id, "message": "Thank you for your feedback!"}
-    else:
-        raise HTTPException(500, "Failed to submit feedback")
-
-
-@app.get("/api/feedback/recent")
-async def recent_feedback(limit: int = 50):
-    """Get recent feedback submissions (admin endpoint)."""
-    feedback_list = await get_recent_feedback(limit)
-    return {"feedback": feedback_list, "count": len(feedback_list)}
 
 
 # ── Static File Serving ───────────────────────────────────────────────────────
