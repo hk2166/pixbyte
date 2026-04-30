@@ -1,0 +1,50 @@
+INFO:     Started server process [13482]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:65121 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65121 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65121 - "GET /api/status/b87f89d0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65123 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65123 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65123 - "GET /api/status/e030402f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "GET /api/status/462b6abb HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "GET /api/status/b3a58f66 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "GET /api/status/5a0c32c8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "GET /api/status/2821ffdf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65126 - "GET /api/status/5d000796 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65129 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65129 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65129 - "GET /api/status/ef187693 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65129 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65129 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65129 - "GET /api/status/cfa061e3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65135 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65135 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65135 - "GET /api/status/875bc72c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65135 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65135 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65135 - "GET /api/status/8c5d38c6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65135 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65135 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65135 - "GET /api/status/9841f7cf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65165 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65165 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65165 - "GET /api/status/613bdf30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65202 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65202 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65202 - "GET /api/status/5772e009 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [13482]
