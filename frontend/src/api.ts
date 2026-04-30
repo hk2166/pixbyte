@@ -1,6 +1,9 @@
 // api.ts — backend API helpers
 import type {
   DisplaysResponse,
+  FeedbackFormData,
+  FeedbackPromptResponse,
+  FeedbackSubmitResponse,
   ProcessResponse,
   StatusEventData,
   UploadResponse,
@@ -80,4 +83,25 @@ export function downloadUrl(jobId: string) {
 
 export function streamMetaUrl(jobId: string) {
   return apiUrl(`/stream/${jobId}/meta`);
+}
+
+export async function fetchFeedbackPrompt(): Promise<FeedbackPromptResponse> {
+  const r = await fetch(apiUrl('/feedback/prompt'));
+  if (!r.ok) throw new Error(await readApiError(r));
+  return r.json();
+}
+
+export async function markFeedbackPromptSeen(): Promise<void> {
+  const r = await fetch(apiUrl('/feedback/prompt-seen'), { method: 'POST' });
+  if (!r.ok) throw new Error(await readApiError(r));
+}
+
+export async function submitFeedback(data: FeedbackFormData): Promise<FeedbackSubmitResponse> {
+  const r = await fetch(apiUrl('/feedback'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!r.ok) throw new Error(await readApiError(r));
+  return r.json();
 }

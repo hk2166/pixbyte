@@ -57,6 +57,23 @@ export interface StatusEventData {
   config?: Partial<DisplayConfig>;
 }
 
+export interface FeedbackPromptResponse {
+  should_show: boolean;
+}
+
+export interface FeedbackFormData {
+  name: string;
+  building: string;
+  improvements: string;
+  features: string;
+}
+
+export interface FeedbackSubmitResponse {
+  success: boolean;
+  feedback_id: number;
+  message: string;
+}
+
 export interface ProcessingState {
   status: JobStatus;
   progress: number;

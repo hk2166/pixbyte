@@ -2,17 +2,37 @@
 database.py — Simple daily visitor tracking for Neon PostgreSQL
 """
 import os
+from pathlib import Path
 from typing import Optional
 import asyncpg
 from asyncpg.pool import Pool
 
 # Database connection pool
 db_pool: Optional[Pool] = None
+_memory_popup_seen: set[str] = set()
+
+
+def _load_local_env() -> None:
+    """Load backend/.env without adding a runtime dependency."""
+    env_path = Path(__file__).with_name(".env")
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if key and key not in os.environ:
+            os.environ[key] = value.strip().strip('"').strip("'")
 
 
 async def init_db():
     """Initialize database connection pool and create tables."""
     global db_pool
+
+    _load_local_env()
     
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
@@ -45,6 +65,10 @@ async def init_db():
                     visitor_count INT NOT NULL DEFAULT 0
                 )
             """)
+            await conn.execute("""
+                ALTER TABLE daily_stats
+                ADD COLUMN IF NOT EXISTS visitor_count INT NOT NULL DEFAULT 0
+            """)
 
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS feedback (
@@ -54,6 +78,13 @@ async def init_db():
                     improvements TEXT NOT NULL,
                     features TEXT NOT NULL,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS video_processed_feedback_popup_seen (
+                    ip_address TEXT PRIMARY KEY,
+                    first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
             """)
         
@@ -222,3 +253,41 @@ async def get_recent_feedback(limit: int = 50) -> list[dict]:
     except Exception as e:
         print(f"Error getting recent feedback: {e}")
         return []
+
+
+async def has_seen_feedback_popup(ip_address: str) -> bool:
+    """Return whether this IP has already been shown the feedback popup."""
+    if not db_pool:
+        return ip_address in _memory_popup_seen
+
+    try:
+        async with db_pool.acquire() as conn:
+            seen = await conn.fetchval("""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM video_processed_feedback_popup_seen
+                    WHERE ip_address = $1
+                )
+            """, ip_address)
+            return bool(seen)
+    except Exception as e:
+        print(f"Error checking feedback popup state: {e}")
+        return ip_address in _memory_popup_seen
+
+
+async def mark_feedback_popup_seen(ip_address: str) -> None:
+    """Mark this IP as already shown the feedback popup."""
+    _memory_popup_seen.add(ip_address)
+
+    if not db_pool:
+        return
+
+    try:
+        async with db_pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO video_processed_feedback_popup_seen (ip_address)
+                VALUES ($1)
+                ON CONFLICT (ip_address) DO NOTHING
+            """, ip_address)
+    except Exception as e:
+        print(f"Error marking feedback popup seen: {e}")

@@ -27,7 +27,8 @@ from processor.dither import apply_dithering
 from processor.encoder import deduplicate_frames, encode_oled_binary, get_binary_stats
 from database import (
     init_db, close_db, track_visitor, get_analytics_summary,
-    submit_feedback, get_recent_feedback, get_daily_stats
+    submit_feedback, get_recent_feedback, get_daily_stats,
+    has_seen_feedback_popup, mark_feedback_popup_seen
 )
 
 app = FastAPI(title="ESP32 OLED Video Converter", version="1.0.0")
@@ -889,6 +890,22 @@ async def recent_feedback(limit: int = 50):
     """Get recent feedback submissions (admin endpoint)."""
     feedback_list = await get_recent_feedback(limit)
     return {"feedback": feedback_list, "count": len(feedback_list)}
+
+
+@app.get("/api/feedback/prompt")
+async def feedback_prompt_state(request: Request):
+    """Return whether this IP should see the one-time feedback popup."""
+    ip = get_client_ip(request)
+    seen = await has_seen_feedback_popup(ip)
+    return {"should_show": not seen}
+
+
+@app.post("/api/feedback/prompt-seen")
+async def feedback_prompt_seen(request: Request):
+    """Mark this IP as having seen the one-time feedback popup."""
+    ip = get_client_ip(request)
+    await mark_feedback_popup_seen(ip)
+    return {"seen": True}
 
 
 # ── Static File Serving ───────────────────────────────────────────────────────

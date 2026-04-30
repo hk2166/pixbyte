@@ -1,17 +1,27 @@
 // App.tsx — Main application shell with two modes: Video Converter + Animation Library
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { useDropzone } from 'react-dropzone';
 import DisplayCard from './components/DisplayCard';
 import OLEDPreview from './components/OLEDPreview';
 import DeliveryPanel from './components/DeliveryPanel';
 import AnimationBrowser from './components/AnimationBrowser';
-import { fetchDisplays, uploadVideo, startProcessing, subscribeStatus } from './api';
+import {
+  fetchDisplays,
+  fetchFeedbackPrompt,
+  markFeedbackPromptSeen,
+  startProcessing,
+  submitFeedback,
+  subscribeStatus,
+  uploadVideo,
+} from './api';
 import { getWiringGuide } from './displayWiring';
 import { useSerial } from './context/SerialContext';
-import type { DisplayConfig, DisplayKey, ProcessingState, VideoInfo } from './types';
+import type { DisplayConfig, DisplayKey, FeedbackFormData, ProcessingState, VideoInfo } from './types';
 import './index.css';
 
 type AppMode = 'converter' | 'animations';
+type FeedbackStatus = 'idle' | 'submitting' | 'submitted' | 'error';
 
 const INITIAL_STATE: ProcessingState = {
   status: 'idle',
@@ -23,6 +33,13 @@ const INITIAL_STATE: ProcessingState = {
   frameCount: 0,
   fps: 0,
   config: {},
+};
+
+const INITIAL_FEEDBACK_FORM: FeedbackFormData = {
+  name: '',
+  building: '',
+  improvements: '',
+  features: '',
 };
 
 export default function App() {
@@ -37,7 +54,12 @@ export default function App() {
   const [customFps, setCustomFps] = useState<number | null>(null);
   const [proc, setProc] = useState<ProcessingState>(INITIAL_STATE);
   const [showWiring, setShowWiring] = useState(false);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [feedbackForm, setFeedbackForm] = useState<FeedbackFormData>(INITIAL_FEEDBACK_FORM);
+  const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus>('idle');
+  const [feedbackError, setFeedbackError] = useState('');
   const unsubRef = useRef<(() => void) | null>(null);
+  const feedbackPromptRequestedRef = useRef(false);
 
   const { connectionState, connect, disconnect, isSupported: serialSupported } = useSerial();
 
@@ -98,6 +120,22 @@ export default function App() {
   const wiringGuide = getWiringGuide(selectedConfig);
   const effectiveFps = customFps ?? selectedConfig?.fps ?? 10;
 
+  const showFeedbackAfterProcessing = useCallback(async () => {
+    if (feedbackPromptRequestedRef.current) return;
+    feedbackPromptRequestedRef.current = true;
+
+    try {
+      const prompt = await fetchFeedbackPrompt();
+      if (!prompt.should_show) return;
+
+      await markFeedbackPromptSeen();
+      setShowFeedbackForm(true);
+    } catch (error) {
+      feedbackPromptRequestedRef.current = false;
+      console.warn('feedback prompt skipped', error);
+    }
+  }, []);
+
   const handleProcess = async () => {
     if (!videoFile) return;
     if (unsubRef.current) unsubRef.current();
@@ -138,6 +176,9 @@ export default function App() {
               config: data.config ?? {},
             } : {}),
           }));
+          if (data.status === 'done') {
+            void showFeedbackAfterProcessing();
+          }
         },
         () => {}
       );
@@ -186,6 +227,33 @@ export default function App() {
         break;
       default:
         break;
+    }
+  };
+
+  const handleFeedbackChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = event.target;
+    setFeedbackForm(form => ({ ...form, [name]: value }));
+  };
+
+  const closeFeedbackForm = () => {
+    setShowFeedbackForm(false);
+    if (feedbackStatus === 'submitted') {
+      setFeedbackForm(INITIAL_FEEDBACK_FORM);
+      setFeedbackStatus('idle');
+    }
+  };
+
+  const handleFeedbackSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFeedbackStatus('submitting');
+    setFeedbackError('');
+
+    try {
+      await submitFeedback(feedbackForm);
+      setFeedbackStatus('submitted');
+    } catch (error: unknown) {
+      setFeedbackStatus('error');
+      setFeedbackError(getErrorMessage(error));
     }
   };
 
@@ -469,6 +537,104 @@ export default function App() {
                 {wiringGuide.note && <div className="wiring-note">{wiringGuide.note}</div>}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── One-time Feedback Form ────────────────────────────────────── */}
+      {showFeedbackForm && (
+        <div className="modal-overlay" onClick={closeFeedbackForm}>
+          <div className="modal-content feedback-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="label-cyan">// quick_feedback</span>
+              <button className="modal-close" onClick={closeFeedbackForm}>✕</button>
+            </div>
+
+            {feedbackStatus === 'submitted' ? (
+              <div className="modal-body">
+                <div className="feedback-success">
+                  <span className="label-cyan">// received</span>
+                  <span className="feedback-copy">Thanks for helping improve 0x1306.</span>
+                </div>
+                <button className="btn-process" onClick={closeFeedbackForm}>
+                  CLOSE
+                </button>
+              </div>
+            ) : (
+              <form className="modal-body feedback-form" onSubmit={handleFeedbackSubmit}>
+                <label className="feedback-field">
+                  <span className="label-dim">// name</span>
+                  <input
+                    name="name"
+                    value={feedbackForm.name}
+                    onChange={handleFeedbackChange}
+                    required
+                    maxLength={80}
+                  />
+                </label>
+
+                <label className="feedback-field">
+                  <span className="label-dim">// building</span>
+                  <input
+                    name="building"
+                    value={feedbackForm.building}
+                    onChange={handleFeedbackChange}
+                    required
+                    maxLength={120}
+                  />
+                </label>
+
+                <label className="feedback-field">
+                  <span className="label-dim">// what should be improved?</span>
+                  <textarea
+                    name="improvements"
+                    value={feedbackForm.improvements}
+                    onChange={handleFeedbackChange}
+                    required
+                    rows={4}
+                    maxLength={1000}
+                  />
+                </label>
+
+                <label className="feedback-field">
+                  <span className="label-dim">// feature requests</span>
+                  <textarea
+                    name="features"
+                    value={feedbackForm.features}
+                    onChange={handleFeedbackChange}
+                    required
+                    rows={4}
+                    maxLength={1000}
+                  />
+                </label>
+
+                {feedbackStatus === 'error' && (
+                  <div className="feedback-error">// error: {feedbackError}</div>
+                )}
+
+                <div className="feedback-actions">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={closeFeedbackForm}
+                    disabled={feedbackStatus === 'submitting'}
+                  >
+                    // skip
+                  </button>
+                  <button
+                    type="submit"
+                    className={`btn-process${feedbackStatus === 'submitting' ? ' processing' : ''}`}
+                    disabled={feedbackStatus === 'submitting'}
+                  >
+                    {feedbackStatus === 'submitting' ? (
+                      <><div className="spinner" /> // submitting_</>
+                    ) : (
+                      <>SUBMIT FEEDBACK</>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
