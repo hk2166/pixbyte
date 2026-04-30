@@ -4,7 +4,7 @@ import {
   useContext,
   useState,
   useEffect,
-  ReactNode,
+  type ReactNode,
   useRef,
 } from "react";
 

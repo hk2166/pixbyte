@@ -1,5 +1,5 @@
 // FeedbackModal.tsx — User feedback form that appears after 2 minutes
-import { useState, FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { submitFeedback } from '../api';
 
 interface Props {

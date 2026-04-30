@@ -338,7 +338,7 @@ export const animations: OLEDAnimation[] = [
     [64],
     5,
     4,
-    (ctx, frame, size) => {
+    (ctx, _frame, size) => {
       const cx = size / 2;
       const cy = size / 2;
       const r = size * 0.4;

@@ -76,7 +76,7 @@ export default function App() {
   const [showWiring, setShowWiring] = useState(false);
   const unsubRef = useRef<(() => void) | null>(null);
 
-  const { connectionState, connect, disconnect, portInfo, isSupported: serialSupported } = useSerial();
+  const { connectionState, connect, disconnect, isSupported: serialSupported } = useSerial();
 
   const getErrorMessage = (error: unknown) => (
     error instanceof Error ? error.message : 'unexpected failure'
@@ -205,7 +205,6 @@ export default function App() {
     : '// idle';
 
   // Serial connection chip
-  const toHex = (n?: number) => (n ? n.toString(16).padStart(4, '0') : 'unknown');
   const chipContent = {
     DISCONNECTED: { icon: '○', text: 'not_connected', colorClass: 'chip-dim' },
     CONNECTING:   { icon: '◌', text: 'connecting...', colorClass: 'chip-yellow' },
