@@ -1,7 +1,7 @@
 // DeliveryPanel.tsx — Flash / SD Card / WiFi streaming delivery modes
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { JobStats, DisplayConfig, DeliveryTab } from '../types';
-import { downloadUrl, streamMetaUrl } from '../api';
+import { downloadUrl } from '../api';
 import { getTransportLabel, getWiringGuide } from '../displayWiring';
 import { flashOledPayloadOverUsb, OLED_RAW_FLASH_ADDRESS } from '../espFlash';
 import type { UsbFlashStatus } from '../espFlash';
@@ -18,18 +18,6 @@ const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8888';
 
 function supportsEmbeddedDriver(config: Partial<DisplayConfig>) {
   return [0, 1, 2].includes(config.driver_id ?? -1);
-}
-
-function getServerPort(baseUrl: string) {
-  try {
-    const url = new URL(baseUrl);
-    if (url.port) {
-      return url.port;
-    }
-    return url.protocol === 'https:' ? '443' : '80';
-  } catch {
-    return '8888';
-  }
 }
 
 // Virtual Display Modal Component with Interactive Resizing
@@ -565,7 +553,7 @@ function FlashTab({ jobId, stats, config, fps }: {
   );
 }
 
-export default function DeliveryPanel({ jobId, stats, config, frameCount, fps }: Props) {
+export default function DeliveryPanel({ jobId, stats, config }: Props) {
   const [tab, setTab] = useState<DeliveryTab>('flash');
   const tabs: { id: DeliveryTab; label: string }[] = [
     { id: 'flash',   label: '// flash_mode' }
