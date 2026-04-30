@@ -15,7 +15,8 @@ from typing import Optional
 import aiofiles
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse, Response
+from fastapi.responses import StreamingResponse, JSONResponse, Response, FileResponse
+from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 from PIL import Image
 from pydantic import BaseModel
@@ -880,3 +881,33 @@ async def recent_feedback(limit: int = 50):
     """Get recent feedback submissions (admin endpoint)."""
     feedback_list = await get_recent_feedback(limit)
     return {"feedback": feedback_list, "count": len(feedback_list)}
+
+
+# ── Static File Serving ───────────────────────────────────────────────────────
+
+# Mount static files for frontend
+FRONTEND_DIR = Path(__file__).parent.parent / "frontend" / "dist"
+
+if FRONTEND_DIR.exists():
+    # Serve static assets (JS, CSS, images, etc.)
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="assets")
+    
+    # Catch-all route for SPA - must be last
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        """Serve the frontend SPA for all non-API routes."""
+        # If it's an API route, let it 404 naturally
+        if full_path.startswith("api/"):
+            raise HTTPException(404, "Not found")
+        
+        # Try to serve the specific file if it exists
+        file_path = FRONTEND_DIR / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        
+        # Otherwise serve index.html for SPA routing
+        index_path = FRONTEND_DIR / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path)
+        
+        raise HTTPException(404, "Frontend not found")
