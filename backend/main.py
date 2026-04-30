@@ -41,6 +41,21 @@ UPLOAD_CHUNK_SIZE = 1024 * 1024
 UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+# ── Active user tracking (by IP) ──────────────────────────────────────────────
+import time as _time
+from fastapi import Request
+
+_active_users: dict[str, float] = {}     # ip → last_seen_timestamp
+_ACTIVE_TIMEOUT = 60                     # consider user gone after 60s
+
+
+def _clean_stale_users() -> None:
+    """Remove IPs that haven't sent a heartbeat within the timeout window."""
+    now = _time.time()
+    stale = [ip for ip, ts in _active_users.items() if now - ts > _ACTIVE_TIMEOUT]
+    for ip in stale:
+        del _active_users[ip]
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -54,6 +69,25 @@ async def get_displays():
         {"key": k, **v} for k, v in DISPLAY_CONFIGS.items()
     ]}
 
+
+@app.post("/api/heartbeat")
+async def heartbeat(request: Request):
+    """Record a heartbeat from the client's IP to track active users."""
+    ip = request.client.host if request.client else "unknown"
+    # Also check X-Forwarded-For for proxied connections (Netlify, etc.)
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        ip = forwarded.split(",")[0].strip()
+    _active_users[ip] = _time.time()
+    _clean_stale_users()
+    return {"active": len(_active_users)}
+
+
+@app.get("/api/active-users")
+async def active_users():
+    """Return the number of currently active users (heartbeated within the last 60s)."""
+    _clean_stale_users()
+    return {"active": len(_active_users)}
 
 @app.post("/api/upload")
 async def upload_video(file: UploadFile = File(...)):

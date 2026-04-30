@@ -664,8 +664,7 @@ function WifiTab({ jobId, frameCount, fps }: {
 export default function DeliveryPanel({ jobId, stats, config, frameCount, fps }: Props) {
   const [tab, setTab] = useState<DeliveryTab>('flash');
   const tabs: { id: DeliveryTab; label: string }[] = [
-  { id: 'flash',   label: '// flash_mode' }  
-    
+    { id: 'flash',   label: '// flash_mode' }
   ];
 
   return (
@@ -690,7 +689,7 @@ export default function DeliveryPanel({ jobId, stats, config, frameCount, fps }:
         )}
       </div>
 
-      
+      {tab === 'flash'   && <FlashTab jobId={jobId} stats={stats} config={config} fps={fps} />}
       
       
     </div>
