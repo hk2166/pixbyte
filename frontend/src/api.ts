@@ -6,18 +6,35 @@ import type {
   UploadResponse,
 } from './types';
 
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8888';
+const rawApiBase = import.meta.env.VITE_API_URL?.trim() ?? '';
+const BASE = rawApiBase
+  .replace(/\/+$/, '')
+  .replace(/\/api$/i, '');
+
+function apiUrl(path: string) {
+  return `${BASE}/api${path}`;
+}
+
+async function readApiError(response: Response) {
+  const text = await response.text();
+  try {
+    const data = JSON.parse(text) as { detail?: unknown };
+    return typeof data.detail === 'string' ? data.detail : text;
+  } catch {
+    return text || response.statusText;
+  }
+}
 
 export async function fetchDisplays(): Promise<DisplaysResponse> {
-  const r = await fetch(`${BASE}/api/displays`);
+  const r = await fetch(apiUrl('/displays'));
   return r.json();
 }
 
 export async function uploadVideo(file: File): Promise<UploadResponse> {
   const fd = new FormData();
   fd.append('file', file);
-  const r = await fetch(`${BASE}/api/upload`, { method: 'POST', body: fd });
-  if (!r.ok) throw new Error(await r.text());
+  const r = await fetch(apiUrl('/upload'), { method: 'POST', body: fd });
+  if (!r.ok) throw new Error(await readApiError(r));
   return r.json();
 }
 
@@ -34,8 +51,8 @@ export async function startProcessing(params: {
   fd.append('use_dither', String(params.use_dither));
   fd.append('dedup_threshold', String(params.dedup_threshold));
   if (params.target_fps) fd.append('target_fps', String(params.target_fps));
-  const r = await fetch(`${BASE}/api/process`, { method: 'POST', body: fd });
-  if (!r.ok) throw new Error(await r.text());
+  const r = await fetch(apiUrl('/process'), { method: 'POST', body: fd });
+  if (!r.ok) throw new Error(await readApiError(r));
   return r.json();
 }
 
@@ -44,7 +61,7 @@ export function subscribeStatus(
   onData: (d: StatusEventData) => void,
   onDone: () => void,
 ): () => void {
-  const es = new EventSource(`${BASE}/api/status/${jobId}`);
+  const es = new EventSource(apiUrl(`/status/${jobId}`));
   es.onmessage = (e) => {
     const data = JSON.parse(e.data) as StatusEventData;
     onData(data);
@@ -58,9 +75,9 @@ export function subscribeStatus(
 }
 
 export function downloadUrl(jobId: string) {
-  return `${BASE}/api/download/${jobId}`;
+  return apiUrl(`/download/${jobId}`);
 }
 
 export function streamMetaUrl(jobId: string) {
-  return `${BASE}/api/stream/${jobId}/meta`;
+  return apiUrl(`/stream/${jobId}/meta`);
 }

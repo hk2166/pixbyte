@@ -45,6 +45,17 @@ async def init_db():
                     visitor_count INT NOT NULL DEFAULT 0
                 )
             """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS feedback (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    building TEXT NOT NULL,
+                    improvements TEXT NOT NULL,
+                    features TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """)
         
         print("✅ Database connected - visitor tracking enabled")
     except Exception as e:
@@ -94,3 +105,120 @@ async def track_visitor(ip_address: str) -> bool:
     except Exception as e:
         print(f"Error tracking visitor: {e}")
         return False
+
+
+async def get_analytics_summary() -> dict:
+    """Return aggregate visitor and feedback counts."""
+    if not db_pool:
+        return {
+            "enabled": False,
+            "total_visitors": 0,
+            "today_visitors": 0,
+            "feedback_count": 0,
+        }
+
+    try:
+        async with db_pool.acquire() as conn:
+            total_visitors = await conn.fetchval("""
+                SELECT COALESCE(SUM(visitor_count), 0)
+                FROM daily_stats
+            """)
+            today_visitors = await conn.fetchval("""
+                SELECT COALESCE(visitor_count, 0)
+                FROM daily_stats
+                WHERE stat_date = CURRENT_DATE
+            """)
+            feedback_count = await conn.fetchval("""
+                SELECT COUNT(*)
+                FROM feedback
+            """)
+            return {
+                "enabled": True,
+                "total_visitors": total_visitors or 0,
+                "today_visitors": today_visitors or 0,
+                "feedback_count": feedback_count or 0,
+            }
+    except Exception as e:
+        print(f"Error getting analytics summary: {e}")
+        return {
+            "enabled": False,
+            "total_visitors": 0,
+            "today_visitors": 0,
+            "feedback_count": 0,
+        }
+
+
+async def get_daily_stats(days: int = 30) -> list[dict]:
+    """Return daily visitor counts for the last N days."""
+    if not db_pool:
+        return []
+
+    try:
+        async with db_pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT stat_date, visitor_count
+                FROM daily_stats
+                WHERE stat_date >= CURRENT_DATE - ($1::int * INTERVAL '1 day')
+                ORDER BY stat_date DESC
+            """, days)
+            return [
+                {
+                    "date": row["stat_date"].isoformat(),
+                    "visitor_count": row["visitor_count"],
+                }
+                for row in rows
+            ]
+    except Exception as e:
+        print(f"Error getting daily stats: {e}")
+        return []
+
+
+async def submit_feedback(
+    name: str,
+    building: str,
+    improvements: str,
+    features: str,
+) -> Optional[int]:
+    """Store a feedback submission and return its id."""
+    if not db_pool:
+        return None
+
+    try:
+        async with db_pool.acquire() as conn:
+            return await conn.fetchval("""
+                INSERT INTO feedback (name, building, improvements, features)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id
+            """, name, building, improvements, features)
+    except Exception as e:
+        print(f"Error submitting feedback: {e}")
+        return None
+
+
+async def get_recent_feedback(limit: int = 50) -> list[dict]:
+    """Return recent feedback submissions."""
+    if not db_pool:
+        return []
+
+    try:
+        async with db_pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT id, name, building, improvements, features, created_at
+                FROM feedback
+                ORDER BY created_at DESC
+                LIMIT $1
+            """, limit)
+            return [
+                {
+                    "id": row["id"],
+                    "name": row["name"],
+                    "building": row["building"],
+                    "improvements": row["improvements"],
+                    "features": row["features"],
+                    "created_at": row["created_at"].isoformat(),
+                }
+                for row in rows
+            ]
+    except Exception as e:
+        print(f"Error getting recent feedback: {e}")
+        return []

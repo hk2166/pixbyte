@@ -1,14 +1,27 @@
-INFO:     Started server process [70299]
+INFO:     Started server process [27506]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8888 (Press CTRL+C to quit)
-INFO:     127.0.0.1:50014 - "GET /api/displays HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50014 - "GET /api/displays HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50249 - "POST /api/track-visit HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50250 - "GET /api/displays HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50399 - "POST /api/track-visit HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50400 - "POST /api/track-visit HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50402 - "GET /api/displays HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50400 - "GET /api/displays HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50494 - "POST /api/track-visit HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50495 - "GET /api/displays HTTP/1.1" 200 OK
+⚠️  DATABASE_URL not set - visitor tracking disabled
+INFO:     127.0.0.1:56672 - "GET /api/displays HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56674 - "GET /api/displays HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56700 - "POST /api/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56700 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56700 - "GET /api/status/45fe0371 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56743 - "GET /api/displays HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56744 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56758 - "GET /api/displays HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56758 - "GET /api/displays HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56762 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56764 - "GET /assets/index-xtltmZ3-.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56762 - "GET /assets/index-wLcEoT4Q.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56770 - "GET /assets/rom-B1wbBJXu.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56766 - "GET /assets/rolldown-runtime-Dw2cE7zH.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56769 - "GET /assets/vendor-1IuFW8BP.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56769 - "GET /api/displays HTTP/1.1" 200 OK
+Dropped 778 duplicate frames. Retained 2462 frames.
+INFO:     127.0.0.1:56773 - "GET /api/displays HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [27506]
