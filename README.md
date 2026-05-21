@@ -2,9 +2,6 @@
 
 Convert videos to binary frames for ESP32 OLED displays. Upload a video, select your display, and get a ready-to-flash Arduino sketch with embedded frames.
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new)
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-
 ## ✨ Features
 
 - **🎬 Video Processing**: Convert MP4, AVI, MOV, MKV, WebM, GIF to OLED frames
@@ -92,20 +89,6 @@ cp backend/.env.example backend/.env
 
 # Tables are created automatically on startup
 ```
-
-See [ANALYTICS_SETUP.md](ANALYTICS_SETUP.md) for details.
-
-## 🚢 Deployment
-
-Deploy to your favorite platform:
-
-- **Railway**: One-click deploy with `railway.toml`
-- **Render**: Auto-deploy with `render.yaml`
-- **Docker**: Use included `Dockerfile` and `docker-compose.yml`
-- **Fly.io**: `flyctl launch`
-- **Vercel**: Use `vercel.json` (serverless)
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
 
 ## 🏗️ Architecture
 
@@ -208,8 +191,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## 🎉 Demo
 
-Try it live: [https://your-app.railway.app](https://your-app.railway.app)
+Try it live: https://pixbyte-1.onrender.com
 
 ---
 
-Made with ❤️ for the ESP32 maker community
+Made with ❤️ by Hemant for the ESP32 maker community
